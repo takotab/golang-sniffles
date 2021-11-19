@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-"strconv"
+	"strconv"
+
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	// "github.com/go-gota/gota/dataframe"
 )
@@ -13,6 +14,12 @@ func check(e error) {
 		panic(e)
 	}
 }
+
+type Row struct {
+	max    float64
+	values []string
+}
+
 func main() {
 	write()
 	f, err := excelize.OpenFile("simple.xlsx")
@@ -26,32 +33,23 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	ColumnsToGetMax := make(map[int][]float64)
-	ColumnsToGetMax[1] = []float32(0.0,0.0)
-	ColumnsToGetMax[2] = []float32(0.0,0.0)
-	for row_index, row := range rows {
-		for col_index, colCell := range row {
-			if s, err := strconv.ParseFloat(colCell, 32); err == nil {
-				if ColumnsToGetMax[col_index][0] < s {				
-					ColumnsToGetMax[col_index][0] := s				
-					ColumnsToGetMax[col_index][1] := row_index
-					fmt.Println("high", col_index, s)
-				}
-			}
-			
-		}
-		fmt.Println("nn")
-	}
-	csvStr := ""
+	ColumnsToGetMax := make(map[int]Row)
+	ColumnsToGetMax[1] = Row{0, []string{}}
+	ColumnsToGetMax[2] = Row{0, []string{}}
 	for _, row := range rows {
-		for _, colCell := range row {
-			csvStr += colCell + ","
-			fmt.Println(colCell)
-		}
-		csvStr += "\n"
-		fmt.Println("nn")
-	}
-	fmt.Println(csvStr)
+		for col_index, colCell := range row {
+			if CurrentMaxRow, ok := ColumnsToGetMax[col_index]; ok {
+				if s, err := strconv.ParseFloat(colCell, 32); err == nil {
+					if CurrentMaxRow.max < s {
+						ColumnsToGetMax[col_index] = Row{s, row}
+						// fmt.Println("high", col_index, s)
+					}
+				}
 
+			}
+		}
+		fmt.Println(row)
+	}
+	fmt.Println(ColumnsToGetMax)
 
 }
