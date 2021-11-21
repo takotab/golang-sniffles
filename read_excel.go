@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -61,20 +63,40 @@ func get_max_rows(fn string, column_numbers []int, return_chan chan []string, wg
 func main() {
 	wg := sync.WaitGroup{}
 	files := []string{"test.xlsx", "test2.xlsx", "test3.xlsx"}
-	files_made := make(chan string, len(files))
 	for _, file := range files {
 		wg.Add(1)
-		go write(file, files_made, &wg)
+		go write(file, &wg)
 	}
+	wg.Wait()
+
+	files_found := make(chan string, 1000)
+	err := filepath.Walk(".",
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(path) == ".xlsx" {
+				fmt.Println(path, info.Size())
+				files_found <- path
+			}
+			return nil
+		})
+	if err != nil {
+		log.Println(err)
+	}
+	close(files_found)
+	fmt.Println("done")
+
 	maxRows := make(chan []string, 100)
-	for i := 0; i < len(files); i++ {
+	for file := range files_found {
 		wg.Add(1)
-		go get_max_rows(<-files_made, []int{1, 2}, maxRows, &wg)
-	}
-	for i := 0; i < (len(files) * 2); i++ {
-		fmt.Println(<-maxRows)
+		go get_max_rows(file, []int{1, 2}, maxRows, &wg)
 	}
 
 	wg.Wait()
+	close(maxRows)
+	for rowPrint := range maxRows {
+		fmt.Println(rowPrint)
+	}
 
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-func write(fn string, files_made chan string, wg *sync.WaitGroup) {
+func write(fn string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	f := excelize.NewFile()
 
@@ -33,5 +33,4 @@ func write(fn string, files_made chan string, wg *sync.WaitGroup) {
 	if err := f.SaveAs(fn); err != nil {
 		log.Fatal(err)
 	}
-	files_made <- fn
 }
