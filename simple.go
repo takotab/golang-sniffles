@@ -2,12 +2,13 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-func write() {
-
+func write(fn string, files_made chan string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	f := excelize.NewFile()
 
 	f.SetCellValue("Sheet1", "A1", "name")
@@ -29,7 +30,8 @@ func write() {
 	f.SetCellValue("Sheet1", "C4", 3.8)
 	f.SetCellValue("Sheet1", "D4", 1.9)
 
-	if err := f.SaveAs("simple.xlsx"); err != nil {
+	if err := f.SaveAs(fn); err != nil {
 		log.Fatal(err)
 	}
+	files_made <- fn
 }

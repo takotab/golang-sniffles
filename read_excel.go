@@ -21,8 +21,8 @@ type Row struct {
 	values []string
 }
 
-func get_max_rows(fn string, column_numbers []int, return_chan chan []string) {
-
+func get_max_rows(fn string, column_numbers []int, return_chan chan []string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	f, err := excelize.OpenFile(fn)
 
 	if err != nil {
@@ -59,15 +59,19 @@ func get_max_rows(fn string, column_numbers []int, return_chan chan []string) {
 }
 
 func main() {
-	write()
 	wg := sync.WaitGroup{}
-	wg.Add(1)
+	files := []string{"test.xlsx", "test2.xlsx", "test3.xlsx"}
+	files_made := make(chan string, len(files))
+	for _, file := range files {
+		wg.Add(1)
+		go write(file, files_made, &wg)
+	}
 	maxRows := make(chan []string, 100)
-	go func() {
-		get_max_rows("simple.xlsx", []int{1, 2}, maxRows)
-		wg.Done()
-	}()
-	for i := 0; i < 2; i++ {
+	for i := 0; i < len(files); i++ {
+		wg.Add(1)
+		go get_max_rows(<-files_made, []int{1, 2}, maxRows, &wg)
+	}
+	for i := 0; i < (len(files) * 2); i++ {
 		fmt.Println(<-maxRows)
 	}
 
