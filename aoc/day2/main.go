@@ -10,10 +10,10 @@ import (
 )
 
 type Position struct {
-	horizontal, depth int
+	horizontal, depth, aim int
 }
 
-var position = Position{horizontal: 0, depth: 0}
+var position = Position{horizontal: 0, depth: 0, aim: 0}
 
 func main() {
 	filename := "input.txt"
@@ -36,10 +36,11 @@ func main() {
 		switch command_parsed[0] {
 		case "forward":
 			position.horizontal += amount
+			position.depth += amount * position.aim
 		case "up":
-			position.depth -= amount
+			position.aim -= amount
 		case "down":
-			position.depth += amount
+			position.aim += amount
 		}
 
 	}
