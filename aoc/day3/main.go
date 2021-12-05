@@ -5,63 +5,63 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
-type Position struct {
-	frequency0 int
-	frequency1 int
-}
-type Report struct {
-	positions []Position
+type Meter struct {
+	readings [][]string
 }
 
-func (r Report) getCode(if0Isfrequent string, if1isFrequent string) string {
-	var code string
-	for _, position := range r.positions {
-		if position.frequency0 > position.frequency1 {
-			code += if0Isfrequent //"0"
-		} else {
-			code += if1isFrequent // 1
+func (m *Meter) getFrequecies(position int) (map[string]int, error) {
+	frequencies := make(map[string]int)
+	for _, reading := range m.readings {
+		frequencies[reading[position]]++
+	}
+	return frequencies, nil
+}
+
+func (m *Meter) removeReadingsByPositionValue(position int, removeValue string) {
+	for _, reading := range m.readings {
+		if reading[position] == removeValue {
+			m.readings = append(m.readings[:position], m.readings[position+1:]...)
 		}
 	}
-	return code
-}
-func (r Report) gamma() (int, error) {
-	code := r.getCode("0", "1")
-	output, err := strconv.ParseInt(code, 2, 64)
-	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
-	return int(output), nil
-}
-func (r Report) epsilon() (int, error) {
-	code := r.getCode("1", "0")
-	output, err := strconv.ParseInt(code, 2, 64)
-	if err != nil {
-		fmt.Println(err)
-		return 0, err
-	}
-	return int(output), nil
-}
-func (r Report) powerConsumption() int {
-	gamme, err := r.gamma()
-	if err != nil {
-		fmt.Println(err)
-	}
-	eps, err := r.epsilon()
-	if err != nil {
-		fmt.Println(err)
-	}
-	return gamme * eps
 }
 
-var report = Report{}
+func (m *Meter) iterateTillOneOver(removeMostCommon bool) {
+	numPositons := len(m.readings[0])
+	for position := 0; position < numPositons; position++ {
+		if len(m.readings) == 0 {
+			break
+		}
+		frequencies, err := m.getFrequecies(position)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if removeMostCommon { // Co2
+			if frequencies["1"] >= frequencies["0"] {
+				fmt.Println("Removing 1")
+				m.removeReadingsByPositionValue(position, "1")
+			} else {
+				fmt.Println("Removing 0")
+				m.removeReadingsByPositionValue(position, "0")
+			}
+		} else { // Oxigen
+			if frequencies["1"] >= frequencies["0"] {
+				fmt.Println("Removing 0")
+				m.removeReadingsByPositionValue(position, "0")
+			} else {
+				fmt.Println("Removing 1")
+				m.removeReadingsByPositionValue(position, "1")
+			}
+		}
+		fmt.Println("len m.readings", len(m.readings), "after position ", position)
+	}
+}
 
 func main() {
-	filename := "input.txt"
+	filename := "input_test.txt"
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -70,31 +70,18 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	// optionally, resize scanner's capacity for lines over 64K, see next example
-	var oxigenOptions [][]string
-	var co2Options [][]string
+	var oxigenOptions Meter
+	var co2Options Meter
 	for scanner.Scan() {
 		parsedCommands := strings.Split(scanner.Text(), "")
-		oxigenOptions = append(oxigenOptions, parsedCommands)
-		co2Options = append(co2Options, parsedCommands)
+		oxigenOptions.readings = append(oxigenOptions.readings, parsedCommands)
+		co2Options.readings = append(co2Options.readings, parsedCommands)
 	}
-	fmt.Println("len oxigenOptions", len(oxigenOptions))
-	fmt.Println("len co2Options", len(co2Options))
-
-	for position := 0; position < len(oxigenOptions[0]); position++ {
-		oxigenFrequency := make(map[string]int)
-		co2Frequency int
-		for _, oxigenOption := range oxigenOptions {
-			oxigenFrequency[oxigenOption[position]]++
-		}
-		for _, co2Option := range co2Options {
-			if co2Option[position] == "1" {
-				co2Frequency++
-			}
-		}
-		report.positions = append(report.positions, Position{oxigenFrequency, co2Frequency})
-	}
-
-	output, err := strconv.ParseInt(code, 2, 64)
-	fmt.Println(report.positions)
-	fmt.Println(report.powerConsumption())
+	fmt.Println("len oxigenOptions", len(oxigenOptions.readings))
+	fmt.Println("len co2Options", len(co2Options.readings))
+	co2Options.iterateTillOneOver(true)
+	print(co2Options.readings)
+	// output, err := strconv.ParseInt(code, 2, 64)
+	// fmt.Println(report.positions)
+	// fmt.Println(report.powerConsumption())
 }
