@@ -70,30 +70,31 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	// optionally, resize scanner's capacity for lines over 64K, see next example
+	var oxigenOptions [][]string
+	var co2Options [][]string
 	for scanner.Scan() {
-		command_parsed := strings.Split(scanner.Text(), "")
-		for position_idx, amount_str := range command_parsed {
-			amount, err := strconv.Atoi(amount_str)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if amount == 0 {
-				if len(report.positions) <= position_idx {
-					report.positions = append(report.positions, Position{frequency0: 1})
-				} else {
-					report.positions[position_idx].frequency0 += 1
-				}
-			} else if amount == 1 {
-				if len(report.positions) <= position_idx {
-					report.positions = append(report.positions, Position{})
-				} else {
-					report.positions[position_idx].frequency1 += 1
-				}
-			}
-
-		}
-
+		parsedCommands := strings.Split(scanner.Text(), "")
+		oxigenOptions = append(oxigenOptions, parsedCommands)
+		co2Options = append(co2Options, parsedCommands)
 	}
+	fmt.Println("len oxigenOptions", len(oxigenOptions))
+	fmt.Println("len co2Options", len(co2Options))
+
+	for position := 0; position < len(oxigenOptions[0]); position++ {
+		oxigenFrequency := make(map[string]int)
+		co2Frequency int
+		for _, oxigenOption := range oxigenOptions {
+			oxigenFrequency[oxigenOption[position]]++
+		}
+		for _, co2Option := range co2Options {
+			if co2Option[position] == "1" {
+				co2Frequency++
+			}
+		}
+		report.positions = append(report.positions, Position{oxigenFrequency, co2Frequency})
+	}
+
+	output, err := strconv.ParseInt(code, 2, 64)
 	fmt.Println(report.positions)
 	fmt.Println(report.powerConsumption())
 }
